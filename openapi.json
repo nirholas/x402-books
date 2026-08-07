@@ -1,0 +1,793 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "x402-books",
+    "version": "0.1.0",
+    "description": "Agents buy clean, chaptered full-text public-domain books — OpenLibrary search, Gutenberg delivery, in-response\n\nEvery paid route returns the purchased artifact in the 200 response body. Pay in USDC on Base or Solana — your client picks the rail.",
+    "license": {
+      "name": "Apache-2.0",
+      "identifier": "Apache-2.0"
+    },
+    "contact": {
+      "name": "nirholas",
+      "email": "nichxbt@gmail.com",
+      "url": "https://github.com/nirholas/x402-books"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:4025",
+      "description": "Local development"
+    },
+    {
+      "url": "{baseUrl}",
+      "description": "Deployed instance",
+      "variables": {
+        "baseUrl": {
+          "default": "http://localhost:4025"
+        }
+      }
+    }
+  ],
+  "externalDocs": {
+    "description": "Docs site",
+    "url": "https://nirholas.github.io/x402-books/"
+  },
+  "tags": [
+    {
+      "name": "paid",
+      "description": "x402-paid routes. Artifact returned in the 200 body."
+    },
+    {
+      "name": "free",
+      "description": "Unpaid metadata routes."
+    }
+  ],
+  "paths": {
+    "/search": {
+      "get": {
+        "operationId": "searchBooks",
+        "summary": "Search books on OpenLibrary, annotated with full-text availability ($0.001)",
+        "description": "Search books on OpenLibrary, annotated with full-text availability\n\nPaid route — $0.001 in USDC. Pay on Base (EVM) or Solana; the 402 challenge lists both rails.",
+        "tags": [
+          "paid"
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Title or free-text query, 1-200 characters.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "frankenstein"
+          },
+          {
+            "name": "author",
+            "in": "query",
+            "required": false,
+            "description": "Narrow to an author name.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Mary Shelley"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Maximum editions to return, 1…20. Default 10.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Editions with authors, first publication year, subjects, cover, OpenLibrary ebook access level — and, where the complete text is buyable here, a ready-to-call `readPath`",
+            "headers": {
+              "X-PAYMENT-RESPONSE": {
+                "description": "Base64 JSON settlement receipt.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "source",
+                    "query",
+                    "totalFound",
+                    "count",
+                    "editions",
+                    "retrievedAt"
+                  ],
+                  "properties": {
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "openlibrary+gutenberg"
+                      ]
+                    },
+                    "query": {
+                      "type": "object",
+                      "properties": {
+                        "q": {
+                          "type": "string"
+                        },
+                        "author": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "limit": {
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    "totalFound": {
+                      "type": "integer",
+                      "description": "Total matches upstream, not just the returned page."
+                    },
+                    "count": {
+                      "type": "integer"
+                    },
+                    "retrievedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "editions": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Edition"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "source": "openlibrary+gutenberg",
+                  "query": {
+                    "q": "frankenstein",
+                    "author": null,
+                    "limit": 2
+                  },
+                  "totalFound": 4033,
+                  "count": 2,
+                  "editions": [
+                    {
+                      "key": "/works/OL450063W",
+                      "title": "Frankenstein; or, The Modern Prometheus",
+                      "authors": [
+                        "Mary Shelley"
+                      ],
+                      "firstPublishYear": 1818,
+                      "editionCount": 2187,
+                      "languages": [
+                        "eng",
+                        "por",
+                        "ger",
+                        "spa",
+                        "chi",
+                        "dut",
+                        "rus",
+                        "ita",
+                        "fre"
+                      ],
+                      "subjects": [
+                        "Frankenstein (Fictitious character)",
+                        "Frankenstein's monster (Fictitious character)",
+                        "Fiction",
+                        "Victor Frankenstein (Fictitious character)",
+                        "Scientists",
+                        "Monsters",
+                        "Fiction, horror",
+                        "Frankenstein (fictitious character), fiction"
+                      ],
+                      "coverUrl": "https://covers.openlibrary.org/b/id/12356249-M.jpg",
+                      "ebookAccess": "public",
+                      "internetArchiveIds": [
+                        "frankensteinormo00shel_8",
+                        "cu31924105428902",
+                        "ghostseer01schiuoft",
+                        "frankensteinormo00shel_9",
+                        "frankensteinorm00shelgoog"
+                      ],
+                      "openLibraryUrl": "https://openlibrary.org/works/OL450063W",
+                      "gutenberg": {
+                        "available": true,
+                        "gutenbergId": 84,
+                        "readPath": "/read/84"
+                      }
+                    },
+                    {
+                      "key": "/works/OL25595002W",
+                      "title": "Mary Shelley's Frankenstein; or, the Modern Prometheus (1818 text)",
+                      "authors": [
+                        "Mary Shelley"
+                      ],
+                      "firstPublishYear": 1818,
+                      "editionCount": 90,
+                      "languages": [
+                        "eng",
+                        "fre",
+                        "rus"
+                      ],
+                      "subjects": [
+                        "Frankenstein, victor",
+                        "Frankenstein's monster",
+                        "Shelley, mary wollstonecraft , 1797-1851",
+                        "Scientists",
+                        "Scientists--fiction",
+                        "Monsters",
+                        "Monsters--fiction",
+                        "Medicine in literature"
+                      ],
+                      "coverUrl": "https://covers.openlibrary.org/b/id/7267770-M.jpg",
+                      "ebookAccess": "public",
+                      "internetArchiveIds": [
+                        "frankenstein00mary_6",
+                        "frankensteinormo0000mary",
+                        "frankensteinormo0000shel_t0c9",
+                        "maryshelleyfrank00shel",
+                        "frankensteinorig0000shel"
+                      ],
+                      "openLibraryUrl": "https://openlibrary.org/works/OL25595002W",
+                      "gutenberg": {
+                        "available": false,
+                        "gutenbergId": null,
+                        "readPath": null,
+                        "note": "Gutendex unreachable; availability resolved via gutenberg.org search."
+                      }
+                    }
+                  ],
+                  "retrievedAt": "2026-08-07T03:14:29.429Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment required (or payment rejected). The body lists both accepted rails.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentRequired"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream data source failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/read/{gutenbergId}": {
+      "get": {
+        "operationId": "readBook",
+        "summary": "Buy the complete public-domain book as chaptered markdown ($0.01)",
+        "description": "Buy the complete public-domain book as chaptered markdown\n\nPaid route — $0.01 in USDC. Pay on Base (EVM) or Solana; the 402 challenge lists both rails.",
+        "tags": [
+          "paid"
+        ],
+        "parameters": [
+          {
+            "name": "gutenbergId",
+            "in": "path",
+            "required": true,
+            "description": "Project Gutenberg ebook number — the `gutenberg.gutenbergId` from `/search`, or the number in a `gutenberg.org/ebooks/N` URL. `84` is Frankenstein.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 84
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The entire book: metadata, front matter, and one entry per chapter with its markdown body and word count — licence boilerplate already stripped",
+            "headers": {
+              "X-PAYMENT-RESPONSE": {
+                "description": "Base64 JSON settlement receipt.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "source",
+                    "gutenbergId",
+                    "title",
+                    "chapterCount",
+                    "wordCount",
+                    "chapters",
+                    "retrievedAt"
+                  ],
+                  "properties": {
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "gutenberg"
+                      ]
+                    },
+                    "gutenbergId": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "authors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "languages": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "subjects": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "textUrl": {
+                      "type": "string",
+                      "format": "uri",
+                      "description": "The Project Gutenberg source file this was derived from."
+                    },
+                    "gutenbergUrl": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "rights": {
+                      "type": "string"
+                    },
+                    "chapterCount": {
+                      "type": "integer"
+                    },
+                    "wordCount": {
+                      "type": "integer",
+                      "description": "Total across front matter and all chapters."
+                    },
+                    "frontMatter": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Markdown before the first chapter heading, or null."
+                    },
+                    "retrievedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "chapters": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Chapter"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "source": "gutenberg",
+                  "gutenbergId": 84,
+                  "title": "Frankenstein; or, the modern prometheus",
+                  "authors": [
+                    "Shelley, Mary Wollstonecraft"
+                  ],
+                  "languages": [
+                    "en"
+                  ],
+                  "subjects": [
+                    "Science fiction",
+                    "Horror tales",
+                    "Gothic fiction",
+                    "Scientists -- Fiction",
+                    "Monsters -- Fiction",
+                    "Frankenstein, Victor (Fictitious character) -- Fiction",
+                    "Frankenstein's monster (Fictitious character) -- Fiction",
+                    "Text",
+                    "Precursors of Science Fiction",
+                    "Gothic Fiction"
+                  ],
+                  "textUrl": "https://www.gutenberg.org/cache/epub/84/pg84.txt",
+                  "gutenbergUrl": "https://www.gutenberg.org/ebooks/84",
+                  "rights": "Public domain in the USA. Project Gutenberg licence applies to the source file; the cleaned text is derived from it.",
+                  "chapterCount": 28,
+                  "wordCount": 74986,
+                  "frontMatter": "Frankenstein;\n\nor, the Modern Prometheus\n\nby Mary Wollstonecraft (Godwin) Shelley\n\nCONTENTS\n\nLetter 1 Letter 2 Letter 3 Letter 4 Chapter 1 Chapter 2 Chapter 3 Chapter 4 Chapter 5 C …",
+                  "chapters": [
+                    {
+                      "index": 1,
+                      "title": "Letter 1",
+                      "markdown": "_To Mrs. Saville, England._\n\nSt. Petersburgh, Dec. 11th, 17—.\n\nYou will rejoice to hear that no disaster has accompanied the commencement of an enterprise which you have regarded with such evil forebodings. I arrived here yesterday, and my first task is to ass …",
+                      "wordCount": 1198
+                    },
+                    {
+                      "index": 2,
+                      "title": "Letter 2",
+                      "markdown": "_To Mrs. Saville, England._\n\nArchangel, 28th March, 17—.\n\nHow slowly the time passes here, encompassed as I am by frost and snow! Yet a second step is taken towards my enterprise. I have hired a vessel and am occupied in collecting my sailors; those whom I hav …",
+                      "wordCount": 1309
+                    }
+                  ],
+                  "retrievedAt": "2026-08-07T03:14:29.864Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment required (or payment rejected). The body lists both accepted rails.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentRequired"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream data source failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "operationId": "serviceInfo",
+        "summary": "Service metadata, live prices, and active payment rails (free)",
+        "tags": [
+          "free"
+        ],
+        "responses": {
+          "200": {
+            "description": "Service metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "health",
+        "summary": "Liveness probe (free)",
+        "tags": [
+          "free"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "uptime": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/.well-known/x402": {
+      "get": {
+        "operationId": "discoveryManifest",
+        "summary": "x402 discovery manifest (free)",
+        "tags": [
+          "free"
+        ],
+        "responses": {
+          "200": {
+            "description": "Manifest.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "GutenbergAvailability": {
+        "type": "object",
+        "required": [
+          "available"
+        ],
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "description": "True when the full text can be bought from `/read/:gutenbergId`."
+          },
+          "gutenbergId": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "readPath": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Ready-to-call path, e.g. `/read/84`."
+          },
+          "note": {
+            "type": "string",
+            "description": "Present only when availability could not be established."
+          }
+        }
+      },
+      "Edition": {
+        "type": "object",
+        "required": [
+          "key",
+          "title",
+          "authors",
+          "gutenberg"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "OpenLibrary work key, e.g. `/works/OL450063W`."
+          },
+          "title": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "firstPublishYear": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "editionCount": {
+            "type": "integer",
+            "description": "How many editions OpenLibrary knows of."
+          },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "MARC language codes."
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Up to 8 subject headings."
+          },
+          "coverUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri"
+          },
+          "ebookAccess": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "OpenLibrary's access level: `public`, `borrowable`, `printdisabled`, `no_ebook`."
+          },
+          "internetArchiveIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Up to 5 IA identifiers."
+          },
+          "openLibraryUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "gutenberg": {
+            "$ref": "#/components/schemas/GutenbergAvailability"
+          }
+        }
+      },
+      "Chapter": {
+        "type": "object",
+        "required": [
+          "index",
+          "title",
+          "markdown",
+          "wordCount"
+        ],
+        "properties": {
+          "index": {
+            "type": "integer",
+            "description": "1-based position in the book."
+          },
+          "title": {
+            "type": "string",
+            "description": "Heading as printed, e.g. \"Chapter 4\" or \"Letter 1\"."
+          },
+          "markdown": {
+            "type": "string",
+            "description": "Chapter body as markdown paragraphs."
+          },
+          "wordCount": {
+            "type": "integer"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Machine-readable error code."
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable description."
+          }
+        }
+      },
+      "PaymentRequirements": {
+        "type": "object",
+        "description": "One accepted payment rail, per the x402 specification.",
+        "required": [
+          "scheme",
+          "network",
+          "maxAmountRequired",
+          "resource",
+          "payTo",
+          "asset"
+        ],
+        "properties": {
+          "scheme": {
+            "type": "string",
+            "enum": [
+              "exact"
+            ]
+          },
+          "network": {
+            "type": "string",
+            "enum": [
+              "base-sepolia",
+              "base",
+              "solana",
+              "solana-devnet"
+            ],
+            "description": "EVM or Solana network this rail settles on."
+          },
+          "maxAmountRequired": {
+            "type": "string",
+            "description": "Price in USDC base units (6 decimals)."
+          },
+          "resource": {
+            "type": "string",
+            "format": "uri"
+          },
+          "description": {
+            "type": "string"
+          },
+          "mimeType": {
+            "type": "string"
+          },
+          "payTo": {
+            "type": "string",
+            "description": "Receive address (0x… for EVM, base58 for Solana)."
+          },
+          "maxTimeoutSeconds": {
+            "type": "integer"
+          },
+          "asset": {
+            "type": "string",
+            "description": "USDC contract address or SPL mint."
+          },
+          "outputSchema": {
+            "type": "object"
+          },
+          "extra": {
+            "type": "object",
+            "description": "EVM: EIP-712 domain (`name`, `version`). Solana: `feePayer`, the sponsor that pays the SOL network fee."
+          }
+        }
+      },
+      "PaymentRequired": {
+        "type": "object",
+        "required": [
+          "x402Version",
+          "accepts"
+        ],
+        "properties": {
+          "x402Version": {
+            "type": "integer",
+            "enum": [
+              1
+            ]
+          },
+          "error": {
+            "type": "string"
+          },
+          "hint": {
+            "type": "string"
+          },
+          "accepts": {
+            "type": "array",
+            "description": "Both rails: USDC on Base and USDC on Solana.",
+            "items": {
+              "$ref": "#/components/schemas/PaymentRequirements"
+            }
+          }
+        }
+      }
+    }
+  }
+}
