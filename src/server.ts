@@ -23,6 +23,7 @@ import {
   usingSuiteDefaultPayTo,
   type RoutePrices,
 } from "./payments.js";
+import { ROUTE_SCHEMAS } from "./schemas.js";
 import { readBook, searchBooks } from "./service.js";
 
 const require = createRequire(import.meta.url);
@@ -35,27 +36,13 @@ const ROUTES: RoutePrices = {
     price: "$0.001",
     description:
       "Book search over OpenLibrary, annotated with whether the full public-domain text can be bought from /read/:gutenbergId.",
-    outputSchema: {
-      type: "object",
-      properties: {
-        totalFound: { type: "integer" },
-        editions: { type: "array", items: { type: "object" } },
-      },
-    },
+    outputSchema: ROUTE_SCHEMAS["GET /search"],
   },
   "GET /read/:gutenbergId": {
     price: "$0.01",
     description:
       "The complete public-domain book: Project Gutenberg text with the licence boilerplate stripped, split into chapters, delivered as markdown JSON in the response body.",
-    outputSchema: {
-      type: "object",
-      properties: {
-        title: { type: "string" },
-        chapterCount: { type: "integer" },
-        wordCount: { type: "integer" },
-        chapters: { type: "array", items: { type: "object" } },
-      },
-    },
+    outputSchema: ROUTE_SCHEMAS["GET /read/:gutenbergId"],
   },
 };
 
@@ -75,10 +62,19 @@ app.get("/.well-known/x402", (_req, res) => {
   res.type("application/json").sendFile(join(publicDir, ".well-known", "x402"));
 });
 
-app.use(express.static(publicDir));
+// `index: false` keeps `GET /` on the handler below, which serves the landing
+// page to browsers and the JSON service descriptor to agents.
+app.use(express.static(publicDir, { index: false }));
 
 // Free: service info.
-app.get("/", (_req, res) => {
+// Content-negotiated — `Accept: text/html` (a browser, or a crawler looking for
+// title/description/favicon/og:image) gets the landing page; everything else,
+// including `Accept: */*`, gets the JSON descriptor.
+app.get("/", (req, res) => {
+  if (req.accepts(["json", "html"]) === "html") {
+    res.sendFile(join(publicDir, "index.html"));
+    return;
+  }
   res.json({
     name: "x402-books",
     description:
