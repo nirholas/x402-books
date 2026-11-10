@@ -1,0 +1,18 @@
+{
+  "name": "x402-books",
+  "version": "0.1.0",
+  "description": "Self-hosted API that searches OpenLibrary and sells chaptered Project Gutenberg full text over x402.",
+  "author": {
+    "name": "nirholas"
+  },
+  "repository": "https://github.com/nirholas/x402-books",
+  "homepage": "https://nirholas.github.io/x402-books/",
+  "license": "Apache-2.0",
+  "keywords": [
+    "x402",
+    "books",
+    "gutenberg",
+    "openlibrary",
+    "agents"
+  ]
+}

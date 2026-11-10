@@ -1,0 +1,22 @@
+{
+  "name": "x402-books",
+  "owner": {
+    "name": "nirholas"
+  },
+  "description": "Self-hosted API that searches OpenLibrary and sells chaptered Project Gutenberg full text over x402.",
+  "plugins": [
+    {
+      "name": "x402-books",
+      "source": "./plugins/x402-books",
+      "description": "Self-hosted API that searches OpenLibrary and sells chaptered Project Gutenberg full text over x402.",
+      "category": "data",
+      "tags": [
+        "x402",
+        "books",
+        "gutenberg",
+        "openlibrary",
+        "agents"
+      ]
+    }
+  ]
+}
